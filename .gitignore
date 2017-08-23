@@ -1,4 +1,5 @@
 *.o
+xdg-shell*
 runme
 
 *.iml

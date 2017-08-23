@@ -6,10 +6,11 @@
 #include <sys/mman.h>
 
 #include <wayland-client.h>
+#include "xdg-shell.h"
 
 struct wl_compositor *compositor;
 struct wl_shm *shm;
-struct wl_shell *shell;
+struct zxdg_shell_v6 *xdg_shell;
 
 void registry_global_handler
 (
@@ -25,9 +26,9 @@ void registry_global_handler
     } else if (strcmp(interface, "wl_shm") == 0) {
         shm = wl_registry_bind(registry, name,
             &wl_shm_interface, 1);
-    } else if (strcmp(interface, "wl_shell") == 0) {
-        shell = wl_registry_bind(registry, name,
-            &wl_shell_interface, 1);
+    } else if (strcmp(interface, "zxdg_shell_v6") == 0) {
+        xdg_shell = wl_registry_bind(registry, name,
+            &zxdg_shell_v6_interface, 1);
     }
 }
 
@@ -43,6 +44,43 @@ const struct wl_registry_listener registry_listener = {
     .global_remove = registry_global_remove_handler
 };
 
+void xdg_toplevel_configure_handler
+(
+    void *data,
+    struct zxdg_toplevel_v6 *xdg_toplevel,
+    int32_t width,
+    int32_t height,
+    struct wl_array *states
+) {
+    printf("configure: %dx%d\n", width, height);
+}
+
+void xdg_toplevel_close_handler
+(
+    void *data,
+    struct zxdg_toplevel_v6 *xdg_toplevel
+) {
+    printf("close\n");
+}
+
+const struct zxdg_toplevel_v6_listener xdg_toplevel_listener = {
+    .configure = xdg_toplevel_configure_handler,
+    .close = xdg_toplevel_close_handler
+};
+
+void xdg_surface_configure_handler
+(
+    void *data,
+    struct zxdg_surface_v6 *xdg_surface,
+    uint32_t serial
+) {
+    zxdg_surface_v6_ack_configure(xdg_surface, serial);
+}
+
+const struct zxdg_surface_v6_listener xdg_surface_listener = {
+    .configure = xdg_surface_configure_handler
+};
+
 int main(void)
 {
     struct wl_display *display = wl_display_connect(NULL);
@@ -53,8 +91,15 @@ int main(void)
     wl_display_roundtrip(display);
 
     struct wl_surface *surface = wl_compositor_create_surface(compositor);
-    struct wl_shell_surface *shell_surface = wl_shell_get_shell_surface(shell, surface);
-    wl_shell_surface_set_toplevel(shell_surface);
+    struct zxdg_surface_v6 *xdg_surface =
+        zxdg_shell_v6_get_xdg_surface(xdg_shell, surface);
+    zxdg_surface_v6_add_listener(xdg_surface, &xdg_surface_listener, NULL);
+    struct zxdg_toplevel_v6 *xdg_toplevel =
+        zxdg_surface_v6_get_toplevel(xdg_surface);
+    zxdg_toplevel_v6_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
+
+    // signal that the surface is ready to be configured
+    wl_surface_commit(surface);
 
     int width = 200;
     int height = 200;
@@ -74,6 +119,9 @@ int main(void)
     // allocate the buffer in that pool
     struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool,
         0, width, height, stride, WL_SHM_FORMAT_XRGB8888);
+
+    // wait for the surface to be configured
+    wl_display_roundtrip(display);
 
     wl_surface_attach(surface, buffer, 0, 0);
     wl_surface_commit(surface);
