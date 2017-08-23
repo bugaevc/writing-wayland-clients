@@ -1,5 +1,5 @@
 runme: main.c xdg-shell.h xdg-shell.c
-	gcc main.c xdg-shell.c -l wayland-client -o runme
+	gcc main.c xdg-shell.c -l wayland-client -l wayland-cursor -o runme
 
 xdg-shell-unstable-v6.xml:
 	curl -O https://cgit.freedesktop.org/wayland/wayland-protocols/plain/unstable/xdg-shell/xdg-shell-unstable-v6.xml

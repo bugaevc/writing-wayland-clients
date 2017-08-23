@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 #include "xdg-shell.h"
 
 struct wl_compositor *compositor;
@@ -14,6 +15,9 @@ struct wl_seat *seat;
 struct zxdg_shell_v6 *xdg_shell;
 
 struct wl_pointer *pointer;
+
+struct wl_surface *cursor_surface;
+struct wl_cursor_image *cursor_image;
 
 void registry_global_handler
 (
@@ -111,7 +115,8 @@ void pointer_enter_handler
     wl_fixed_t y
 )
 {
-    wl_pointer_set_cursor(pointer, serial, /* TODO */);
+    wl_pointer_set_cursor(pointer, serial, cursor_surface,
+        cursor_image->hotspot_x, cursor_image->hotspot_y);
 }
 
 void pointer_leave_handler
@@ -175,6 +180,18 @@ int main(void)
     // has a pointing device
     pointer = wl_seat_get_pointer(seat);
     wl_pointer_add_listener(pointer, &pointer_listener, NULL);
+
+    struct wl_cursor_theme *cursor_theme =
+        wl_cursor_theme_load(NULL, 24, shm);
+    struct wl_cursor *cursor =
+        wl_cursor_theme_get_cursor(cursor_theme, "left_ptr");
+    cursor_image = cursor->images[0];
+    struct wl_buffer *cursor_buffer =
+        wl_cursor_image_get_buffer(cursor_image);
+
+    cursor_surface = wl_compositor_create_surface(compositor);
+    wl_surface_attach(cursor_surface, cursor_buffer, 0, 0);
+    wl_surface_commit(cursor_surface);
 
     zxdg_shell_v6_add_listener(xdg_shell, &xdg_shell_listener, NULL);
 
