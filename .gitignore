@@ -1,0 +1,5 @@
+*.o
+runme
+
+*.iml
+.idea
