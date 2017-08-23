@@ -53,6 +53,8 @@ int main(void)
     wl_display_roundtrip(display);
 
     struct wl_surface *surface = wl_compositor_create_surface(compositor);
+    struct wl_shell_surface *shell_surface = wl_shell_get_shell_surface(shell, surface);
+    wl_shell_surface_set_toplevel(shell_surface);
 
     int width = 200;
     int height = 200;
