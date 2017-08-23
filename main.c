@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <syscall.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
 #include <wayland-client.h>
 
 struct wl_compositor *compositor;
@@ -48,13 +52,29 @@ int main(void)
     // wait for the "initial" set of globals to appear
     wl_display_roundtrip(display);
 
-    // all our objects should be ready!
-    if (compositor && shm && shell) {
-        printf("Got them all!\n");
-    } else {
-        printf("Some required globals unavailable\n");
-        return 1;
-    }
+    struct wl_surface *surface = wl_compositor_create_surface(compositor);
+
+    int width = 200;
+    int height = 200;
+    int stride = width * 4;
+    int size = stride * height;  // bytes
+
+    // open an anonymous file and write some zero bytes to it
+    int fd = syscall(SYS_memfd_create, "buffer", 0);
+    ftruncate(fd, size);
+
+    // map it to the memory
+    unsigned char *data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    // turn it into a shared memory pool
+    struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
+
+    // allocate the buffer in that pool
+    struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool,
+        0, width, height, stride, WL_SHM_FORMAT_XRGB8888);
+
+    wl_surface_attach(surface, buffer, 0, 0);
+    wl_surface_commit(surface);
 
     while (1) {
         wl_display_dispatch(display);
