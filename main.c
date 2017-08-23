@@ -10,7 +10,10 @@
 
 struct wl_compositor *compositor;
 struct wl_shm *shm;
+struct wl_seat *seat;
 struct zxdg_shell_v6 *xdg_shell;
+
+struct wl_pointer *pointer;
 
 void registry_global_handler
 (
@@ -26,6 +29,9 @@ void registry_global_handler
     } else if (strcmp(interface, "wl_shm") == 0) {
         shm = wl_registry_bind(registry, name,
             &wl_shm_interface, 1);
+    } else if (strcmp(interface, "wl_seat") == 0) {
+        seat = wl_registry_bind(registry, name,
+            &wl_seat_interface, 1);
     } else if (strcmp(interface, "zxdg_shell_v6") == 0) {
         xdg_shell = wl_registry_bind(registry, name,
             &zxdg_shell_v6_interface, 1);
@@ -95,6 +101,67 @@ const struct zxdg_shell_v6_listener xdg_shell_listener = {
     .ping = xdg_shell_ping_handler
 };
 
+void pointer_enter_handler
+(
+    void *data,
+    struct wl_pointer *pointer,
+    uint32_t serial,
+    struct wl_surface *surface,
+    wl_fixed_t x,
+    wl_fixed_t y
+)
+{
+    wl_pointer_set_cursor(pointer, serial, /* TODO */);
+}
+
+void pointer_leave_handler
+(
+    void *data,
+    struct wl_pointer *pointer,
+    uint32_t serial,
+    struct wl_surface *surface
+)
+{ }
+
+void pointer_motion_handler
+(
+    void *data,
+    struct wl_pointer *pointer,
+    uint32_t time,
+    wl_fixed_t x,
+    wl_fixed_t y
+)
+{ }
+
+void pointer_button_handler
+(
+    void *data,
+    struct wl_pointer *pointer,
+    uint32_t serial,
+    uint32_t time,
+    uint32_t button,
+    uint32_t state
+)
+{ }
+
+void pointer_axis_handler
+(
+    void *data,
+    struct wl_pointer *pointer,
+    uint32_t time,
+    uint32_t axis,
+    wl_fixed_t value
+)
+{ }
+
+const struct wl_pointer_listener pointer_listener = {
+    .enter = pointer_enter_handler,
+    .leave = pointer_leave_handler,
+    .motion = pointer_motion_handler,
+    .button = pointer_button_handler,
+    .axis = pointer_axis_handler
+};
+
 int main(void)
 {
     struct wl_display *display = wl_display_connect(NULL);
@@ -103,6 +170,11 @@ int main(void)
 
     // wait for the "initial" set of globals to appear
     wl_display_roundtrip(display);
+
+    // this is only going to work if your computer
+    // has a pointing device
+    pointer = wl_seat_get_pointer(seat);
+    wl_pointer_add_listener(pointer, &pointer_listener, NULL);
 
     zxdg_shell_v6_add_listener(xdg_shell, &xdg_shell_listener, NULL);
 
