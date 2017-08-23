@@ -117,6 +117,10 @@ void pointer_enter_handler
 {
     wl_pointer_set_cursor(pointer, serial, cursor_surface,
         cursor_image->hotspot_x, cursor_image->hotspot_y);
+
+    printf("enter:\t%d %d\n",
+        wl_fixed_to_int(x),
+        wl_fixed_to_int(y));
 }
 
 void pointer_leave_handler
@@ -126,7 +130,9 @@ void pointer_leave_handler
     uint32_t serial,
     struct wl_surface *surface
 )
-{ }
+{
+    printf("leave\n");
+}
 
 void pointer_motion_handler
 (
@@ -136,7 +142,11 @@ void pointer_motion_handler
     wl_fixed_t x,
     wl_fixed_t y
 )
-{ }
+{
+    printf("motion:\t%d %d\n",
+        wl_fixed_to_int(x),
+        wl_fixed_to_int(y));
+}
 
 void pointer_button_handler
 (
@@ -147,7 +157,9 @@ void pointer_button_handler
     uint32_t button,
     uint32_t state
 )
-{ }
+{
+    printf("button: 0x%x state: %d\n", button, state);
+}
 
 void pointer_axis_handler
 (
@@ -157,7 +169,9 @@ void pointer_axis_handler
     uint32_t axis,
     wl_fixed_t value
 )
-{ }
+{
+    printf("axis: %d %f\n", axis, wl_fixed_to_double(value));
+}
 
 const struct wl_pointer_listener pointer_listener = {
     .enter = pointer_enter_handler,
