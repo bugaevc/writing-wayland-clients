@@ -81,6 +81,20 @@ const struct zxdg_surface_v6_listener xdg_surface_listener = {
     .configure = xdg_surface_configure_handler
 };
 
+void xdg_shell_ping_handler
+(
+    void *data,
+    struct zxdg_shell_v6 *xdg_shell,
+    uint32_t serial
+) {
+    zxdg_shell_v6_pong(xdg_shell, serial);
+    printf("ping-pong\n");
+}
+
+const struct zxdg_shell_v6_listener xdg_shell_listener = {
+    .ping = xdg_shell_ping_handler
+};
+
 int main(void)
 {
     struct wl_display *display = wl_display_connect(NULL);
@@ -89,6 +103,8 @@ int main(void)
 
     // wait for the "initial" set of globals to appear
     wl_display_roundtrip(display);
+
+    zxdg_shell_v6_add_listener(xdg_shell, &xdg_shell_listener, NULL);
 
     struct wl_surface *surface = wl_compositor_create_surface(compositor);
     struct zxdg_surface_v6 *xdg_surface =
