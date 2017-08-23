@@ -147,11 +147,23 @@ int main(void)
                 unsigned char alpha;
             } *px = (struct pixel *) (data + y * stride + x * 4);
 
-            // yellow
-            px->alpha = 255;
-            px->red = 255;
-            px->green = 255;
-            px->blue = 0;
+            // draw a stripes pattern
+            if ((x + y) % 30 < 10) {
+                // transparent
+                px->alpha = 0;
+            } else if ((x + y) % 30 < 20) {
+                // yellow
+                px->alpha = 255;
+                px->red = 255;
+                px->green = 255;
+                px->blue = 0;
+            } else {
+                // semitransparent red
+                px->alpha = 128;
+                px->red = 255;
+                px->green = 0;
+                px->blue = 0;
+            }
         }
     }
 
