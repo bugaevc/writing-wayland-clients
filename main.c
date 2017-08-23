@@ -134,7 +134,26 @@ int main(void)
 
     // allocate the buffer in that pool
     struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool,
-        0, width, height, stride, WL_SHM_FORMAT_XRGB8888);
+        0, width, height, stride, WL_SHM_FORMAT_ARGB8888);
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+
+            struct pixel {
+                // little-endian ARGB
+                unsigned char blue;
+                unsigned char green;
+                unsigned char red;
+                unsigned char alpha;
+            } *px = (struct pixel *) (data + y * stride + x * 4);
+
+            // yellow
+            px->alpha = 255;
+            px->red = 255;
+            px->green = 255;
+            px->blue = 0;
+        }
+    }
 
     // wait for the surface to be configured
     wl_display_roundtrip(display);
